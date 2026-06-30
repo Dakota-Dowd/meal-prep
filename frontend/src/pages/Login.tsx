@@ -1,27 +1,37 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
+const API = 'http://localhost:3001';
+
 export default function Login() {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
-
-    const users: { username: string; password: string }[] = JSON.parse(
-      localStorage.getItem('mp_users') || '[]'
-    );
-    const match = users.find(u => u.username === username && u.password === password);
-    if (!match) {
-      setError('Invalid username or password.');
-      return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Login failed.');
+        return;
+      }
+      localStorage.setItem('mp_auth', JSON.stringify({ token: data.token, username: data.username }));
+      navigate('/');
+    } catch {
+      setError('Could not connect to server.');
+    } finally {
+      setLoading(false);
     }
-
-    localStorage.setItem('mp_auth', JSON.stringify({ username }));
-    navigate('/');
   }
 
   return (
@@ -54,7 +64,9 @@ export default function Login() {
               required
             />
           </div>
-          <button type="submit" className="btn-primary">Sign In</button>
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
         </form>
 
         <p className="auth-switch">

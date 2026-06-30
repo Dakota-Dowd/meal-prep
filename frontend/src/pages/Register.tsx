@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const SIGNUP_PASSCODE = 'meal-prep-passcode';
+const API = 'http://localhost:3001';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -9,8 +10,9 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
 
@@ -19,18 +21,25 @@ export default function Register() {
       return;
     }
 
-    const users: { username: string; password: string }[] = JSON.parse(
-      localStorage.getItem('mp_users') || '[]'
-    );
-    if (users.find(u => u.username === username)) {
-      setError('Username already taken.');
-      return;
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Registration failed.');
+        return;
+      }
+      localStorage.setItem('mp_auth', JSON.stringify({ token: data.token, username: data.username }));
+      navigate('/');
+    } catch {
+      setError('Could not connect to server.');
+    } finally {
+      setLoading(false);
     }
-
-    users.push({ username, password });
-    localStorage.setItem('mp_users', JSON.stringify(users));
-    localStorage.setItem('mp_auth', JSON.stringify({ username }));
-    navigate('/');
   }
 
   return (
@@ -73,7 +82,9 @@ export default function Register() {
               required
             />
           </div>
-          <button type="submit" className="btn-primary">Create Account</button>
+          <button type="submit" className="btn-primary" disabled={loading}>
+            {loading ? 'Creating...' : 'Create Account'}
+          </button>
         </form>
 
         <p className="auth-switch">
