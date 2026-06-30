@@ -1,29 +1,21 @@
 import express from 'express';
 import cors from 'cors';
+import dotenv from 'dotenv';
+import authRoutes from './routes/auth';
+
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173' }));
 app.use(express.json());
 
 app.get('/', (_req, res) => {
   res.json({ message: 'Meal Prep API' });
 });
 
-// Auth stubs
-app.post('/api/auth/register', (req, res) => {
-  const { username, passcode } = req.body;
-  if (passcode !== 'meal-prep-passcode') {
-    return res.status(401).json({ error: 'Invalid passcode' });
-  }
-  res.json({ token: 'mock-token', username });
-});
-
-app.post('/api/auth/login', (req, res) => {
-  const { username } = req.body;
-  res.json({ token: 'mock-token', username });
-});
+app.use('/api/auth', authRoutes);
 
 // Meals stubs
 app.get('/api/meals', (_req, res) => {
