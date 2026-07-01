@@ -3,6 +3,7 @@ import type { Meal } from '../data/mockMeals';
 
 interface Props {
   selectedMeals: Meal[];
+  onClear: () => void;
 }
 
 interface AggregatedIngredient {
@@ -27,7 +28,7 @@ function aggregate(meals: Meal[]): AggregatedIngredient[] {
   return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export default function ShoppingList({ selectedMeals }: Props) {
+export default function ShoppingList({ selectedMeals, onClear }: Props) {
   const [copied, setCopied] = useState(false);
   const items = aggregate(selectedMeals);
 
@@ -42,7 +43,7 @@ export default function ShoppingList({ selectedMeals }: Props) {
   return (
     <aside className="shopping-sidebar">
       <div className="panel-header">
-        <span className="panel-title">Shopping List</span>
+        <span className="panel-title">Grocery List</span>
         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
           {selectedMeals.length} meal{selectedMeals.length !== 1 ? 's' : ''}
         </span>
@@ -51,7 +52,7 @@ export default function ShoppingList({ selectedMeals }: Props) {
       {items.length === 0 ? (
         <div className="shopping-empty">
           <div className="icon">🛒</div>
-          <p>Select meals to build your shopping list.</p>
+          <p>Select meals and click "Add to grocery list".</p>
         </div>
       ) : (
         <>
@@ -68,6 +69,9 @@ export default function ShoppingList({ selectedMeals }: Props) {
             onClick={handleCopy}
           >
             {copied ? 'Copied!' : 'Copy List'}
+          </button>
+          <button className="btn-clear" onClick={onClear}>
+            Clear grocery list
           </button>
         </>
       )}
