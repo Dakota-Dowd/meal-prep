@@ -1,5 +1,4 @@
 import { Router, Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool } from '../db';
 
@@ -18,10 +17,9 @@ router.post('/register', async (req: Request, res: Response) => {
       return res.status(409).json({ error: 'Username already taken' });
     }
 
-    const hash = await bcrypt.hash(password, 10);
     const [result]: any = await pool.query(
-      'INSERT INTO users (username, password_hash) VALUES (?, ?)',
-      [username, hash]
+      'INSERT INTO users (username, password) VALUES (?, ?)',
+      [username, password]
     );
 
     const token = jwt.sign({ userId: result.insertId, username }, JWT_SECRET, { expiresIn: '7d' });
@@ -40,19 +38,14 @@ router.post('/login', async (req: Request, res: Response) => {
 
   try {
     const [rows]: any = await pool.query(
-      'SELECT id, username, password_hash FROM users WHERE username = ?',
-      [username]
+      'SELECT id, username FROM users WHERE username = ? AND password = ?',
+      [username, password]
     );
     if (rows.length === 0) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const user = rows[0];
-    const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
     const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ token, username: user.username });
   } catch (err) {
