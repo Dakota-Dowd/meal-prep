@@ -28,6 +28,10 @@ Meals owned by a user.
 | name | VARCHAR(100) | not null |
 | tags | JSON | e.g. `["Breakfast", "High Protein"]` |
 | instructions | TEXT | optional |
+| image_path | VARCHAR(500) | optional; filename only, served from `/uploads/` |
+| url | VARCHAR(500) | optional reference link |
+| rating | TINYINT UNSIGNED | 1–5, NULL = unrated |
+| prep_time_minutes | SMALLINT UNSIGNED | minutes, NULL = not set |
 | created_at | DATETIME | default current_timestamp |
 
 ---

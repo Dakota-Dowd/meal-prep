@@ -11,6 +11,11 @@ export interface Meal {
   name: string;
   tags: string[];
   ingredients: Ingredient[];
+  image_path?: string;
+  url?: string;
+  rating?: number;
+  prep_time_minutes?: number;
+  instructions?: string;
 }
 
 export const ALL_TAGS = ['Breakfast', 'Lunch', 'Dinner', 'High Protein', 'Vegetarian', 'Quick'];
