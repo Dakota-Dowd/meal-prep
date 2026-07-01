@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const SIGNUP_PASSCODE = 'meal-prep-passcode';
-const API = 'http://localhost:3001';
+const API = import.meta.env.VITE_API_URL;
 
 export default function Register() {
   const navigate = useNavigate();
