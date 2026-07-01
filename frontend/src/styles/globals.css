@@ -554,7 +554,8 @@ input, select, textarea {
 .modal-footer {
   display: flex;
   gap: 0.75rem;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   margin-top: 1.5rem;
 }
 
@@ -778,4 +779,21 @@ input, select, textarea {
 .modal textarea:focus {
   outline: none;
   border-color: var(--mint);
+}
+
+/* Delete meal button */
+.btn-delete {
+  background: transparent;
+  border: 1.5px solid #e53e3e;
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 1.1rem;
+  font-size: 0.875rem;
+  color: #e53e3e;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-delete:hover {
+  background: #e53e3e;
+  color: white;
 }

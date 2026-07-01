@@ -1,18 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MealCard from '../components/MealCard';
 import ShoppingList from '../components/ShoppingList';
 import AddMealModal from '../components/AddMealModal';
 import MealDetailModal from '../components/MealDetailModal';
 import { ALL_TAGS, type Meal } from '../data/mockMeals';
+import { API_BASE, getAuthHeaders } from '../config';
 
-const STORAGE_MEALS = 'mp_meals';
 const STORAGE_SELECTED = 'mp_selected';
-
-function loadMeals(): Meal[] {
-  const saved = localStorage.getItem(STORAGE_MEALS);
-  return saved ? JSON.parse(saved) : [];
-}
 
 function loadSelected(): string[] {
   const saved = localStorage.getItem(STORAGE_SELECTED);
@@ -23,12 +18,21 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const auth = JSON.parse(localStorage.getItem('mp_auth') || 'null');
 
-  const [meals, setMeals] = useState<Meal[]>(loadMeals);
+  const [meals, setMeals] = useState<Meal[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<string[]>(loadSelected);
   const [stagedIds, setStagedIds] = useState<string[]>([]);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [detailMeal, setDetailMeal] = useState<Meal | null>(null);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/meals`, { headers: getAuthHeaders() })
+      .then(r => r.json())
+      .then(data => setMeals(data))
+      .catch(err => console.error('Failed to load meals:', err))
+      .finally(() => setLoading(false));
+  }, []);
 
   function stageMeal(id: string) {
     setStagedIds(prev =>
@@ -50,16 +54,51 @@ export default function Dashboard() {
     localStorage.setItem(STORAGE_SELECTED, JSON.stringify([]));
   }
 
-  function addMeal(meal: Meal) {
-    const next = [...meals, meal];
-    setMeals(next);
-    localStorage.setItem(STORAGE_MEALS, JSON.stringify(next));
+  async function addMeal(meal: Meal) {
+    try {
+      const res = await fetch(`${API_BASE}/api/meals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(meal),
+      });
+      const saved = await res.json();
+      setMeals(prev => [...prev, saved]);
+    } catch (err) {
+      console.error('Failed to add meal:', err);
+    }
   }
 
-  function saveMeal(updated: Meal) {
-    const next = meals.map(m => m.id === updated.id ? updated : m);
-    setMeals(next);
-    localStorage.setItem(STORAGE_MEALS, JSON.stringify(next));
+  async function saveMeal(updated: Meal) {
+    try {
+      const res = await fetch(`${API_BASE}/api/meals/${updated.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(updated),
+      });
+      const saved = await res.json();
+      setMeals(prev => prev.map(m => m.id === saved.id ? saved : m));
+    } catch (err) {
+      console.error('Failed to save meal:', err);
+    }
+  }
+
+  async function deleteMeal(id: string) {
+    try {
+      await fetch(`${API_BASE}/api/meals/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      setMeals(prev => prev.filter(m => m.id !== id));
+      setSelectedIds(prev => {
+        const next = prev.filter(x => x !== id);
+        localStorage.setItem(STORAGE_SELECTED, JSON.stringify(next));
+        return next;
+      });
+      setStagedIds(prev => prev.filter(x => x !== id));
+      setDetailMeal(null);
+    } catch (err) {
+      console.error('Failed to delete meal:', err);
+    }
   }
 
   function openDetail(id: string) {
@@ -97,7 +136,7 @@ export default function Dashboard() {
           <div className="panel-header">
             <span className="panel-title">My Meals</span>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              {displayed.length} meal{displayed.length !== 1 ? 's' : ''}
+              {loading ? 'Loading…' : `${displayed.length} meal${displayed.length !== 1 ? 's' : ''}`}
             </span>
           </div>
 
@@ -126,17 +165,21 @@ export default function Dashboard() {
             </div>
           )}
 
-          <div className="meals-grid">
-            {displayed.map(meal => (
-              <MealCard
-                key={meal.id}
-                meal={meal}
-                staged={stagedIds.includes(meal.id)}
-                onStage={stageMeal}
-                onOpen={openDetail}
-              />
-            ))}
-          </div>
+          {loading ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading meals…</div>
+          ) : (
+            <div className="meals-grid">
+              {displayed.map(meal => (
+                <MealCard
+                  key={meal.id}
+                  meal={meal}
+                  staged={stagedIds.includes(meal.id)}
+                  onStage={stageMeal}
+                  onOpen={openDetail}
+                />
+              ))}
+            </div>
+          )}
         </main>
 
         <ShoppingList selectedMeals={selectedMeals} onClear={clearGroceryList} />
@@ -151,6 +194,7 @@ export default function Dashboard() {
           meal={detailMeal}
           onClose={() => setDetailMeal(null)}
           onSave={saveMeal}
+          onDelete={deleteMeal}
         />
       )}
     </div>

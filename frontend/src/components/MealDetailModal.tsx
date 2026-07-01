@@ -14,13 +14,14 @@ interface Props {
   meal: Meal;
   onClose: () => void;
   onSave: (updated: Meal) => void;
+  onDelete: (id: string) => void;
 }
 
 function toRows(meal: Meal): IngredientRow[] {
   return meal.ingredients.map(i => ({ name: i.name, quantity: String(i.quantity), unit: i.unit }));
 }
 
-export default function MealDetailModal({ meal, onClose, onSave }: Props) {
+export default function MealDetailModal({ meal, onClose, onSave, onDelete }: Props) {
   const [name, setName] = useState(meal.name);
   const [tags, setTags] = useState<string[]>(meal.tags);
   const [rows, setRows] = useState<IngredientRow[]>(toRows(meal));
@@ -223,8 +224,11 @@ export default function MealDetailModal({ meal, onClose, onSave }: Props) {
           />
 
           <div className="modal-footer">
-            <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn-submit">Save</button>
+            <button type="button" className="btn-delete" onClick={() => onDelete(meal.id)}>Delete</button>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
+              <button type="submit" className="btn-submit">Save</button>
+            </div>
           </div>
         </form>
       </div>

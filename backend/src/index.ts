@@ -7,6 +7,7 @@ import crypto from 'crypto';
 import multer from 'multer';
 import sharp from 'sharp';
 import authRoutes from './routes/auth';
+import mealRoutes from './routes/meals';
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.get('/', (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/meals', mealRoutes);
 
 // Image upload
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
@@ -43,17 +45,7 @@ app.post('/api/meals/:id/image', upload.single('image'), async (req, res) => {
   res.json({ image_path: filename });
 });
 
-// Meals stubs
-app.get('/api/meals', (_req, res) => {
-  res.json([]);
-});
-
-app.post('/api/meals', (req, res) => {
-  console.log('New meal:', req.body);
-  res.status(201).json({ id: 'stub', ...req.body });
-});
-
-// Selected meals stubs
+// Selected meals stubs (to be wired up separately)
 app.get('/api/selected-meals', (_req, res) => {
   res.json([]);
 });
