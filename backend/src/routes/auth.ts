@@ -13,20 +13,19 @@ router.post('/register', async (req: Request, res: Response) => {
   }
 
   try {
-    const existing = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
-    if (existing.rows.length > 0) {
+    const [rows]: any = await pool.query('SELECT id FROM users WHERE username = ?', [username]);
+    if (rows.length > 0) {
       return res.status(409).json({ error: 'Username already taken' });
     }
 
     const hash = await bcrypt.hash(password, 10);
-    const result = await pool.query(
-      'INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username',
+    const [result]: any = await pool.query(
+      'INSERT INTO users (username, password_hash) VALUES (?, ?)',
       [username, hash]
     );
 
-    const user = result.rows[0];
-    const token = jwt.sign({ userId: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' });
-    res.status(201).json({ token, username: user.username });
+    const token = jwt.sign({ userId: result.insertId, username }, JWT_SECRET, { expiresIn: '7d' });
+    res.status(201).json({ token, username });
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -40,12 +39,15 @@ router.post('/login', async (req: Request, res: Response) => {
   }
 
   try {
-    const result = await pool.query('SELECT id, username, password_hash FROM users WHERE username = $1', [username]);
-    if (result.rows.length === 0) {
+    const [rows]: any = await pool.query(
+      'SELECT id, username, password_hash FROM users WHERE username = ?',
+      [username]
+    );
+    if (rows.length === 0) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const user = result.rows[0];
+    const user = rows[0];
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
       return res.status(401).json({ error: 'Invalid credentials' });
